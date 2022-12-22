@@ -83,20 +83,20 @@ def train_or_eval_model(model, loss_function, dataloader, epoch, optimizer=None,
             
         # create umask and qmask 
         lengths = [len(item) for item in conversations]
-        umask = torch.zeros(len(lengths), max(lengths)).long().cuda()
+        umask = torch.zeros(len(lengths), max(lengths)).long().cpu()
         for j in range(len(lengths)):
             umask[j][:lengths[j]] = 1
             
         qmask = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in speaker_mask], 
-                                                batch_first=False).long().cuda()
+                                                batch_first=False).long().cpu()
         qmask = torch.nn.functional.one_hot(qmask)
         
         # create labels and mask
         label = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in label], 
-                                                batch_first=True).cuda()
+                                                batch_first=True).cpu()
         
         loss_mask = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in loss_mask], 
-                                                    batch_first=True).long().cuda()
+                                                    batch_first=True).long().cpu()
         
         
         # obtain log probabilities

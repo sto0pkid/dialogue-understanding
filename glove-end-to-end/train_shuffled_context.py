@@ -59,26 +59,26 @@ def train_or_eval_model(model, loss_function1, loss_function2, dataloader, epoch
             
         # create umask and qmask 
         lengths = [len(item) for item in conversations]
-        umask = torch.zeros(len(lengths), max(lengths)).long().cuda()
+        umask = torch.zeros(len(lengths), max(lengths)).long().cpu()
         for j in range(len(lengths)):
             umask[j][:lengths[j]] = 1
             
         qmask = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in speaker_mask], 
-                                                batch_first=False).long().cuda()
+                                                batch_first=False).long().cpu()
         qmask = torch.nn.functional.one_hot(qmask)
         
         # create labels and mask
         label = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in label], 
-                                                batch_first=True).cuda()
+                                                batch_first=True).cpu()
         
         if indices == []:
             indices = [list(range(item)) for item in lengths]
             
         seq_label = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in indices], 
-                                                     batch_first=True).cuda()
+                                                     batch_first=True).cpu()
         
         loss_mask = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in loss_mask], 
-                                                    batch_first=True).cuda()
+                                                    batch_first=True).cpu()
         
         # obtain log probabilities
         log_prob, seq_label_log_prob = model(conversations, lengths, umask, qmask)
@@ -323,7 +323,7 @@ if __name__ == '__main__':
                                            D_e, D_h, n_classes, dropout, attention, context_attention, rec_dropout,
                                            residual, max(conv_lens))
     model1.init_pretrained_embeddings(embedding_matrix)
-    model1.cuda()
+    model1.cpu()
     optimizer1 = optim.Adam(model1.parameters(), lr=args.lr)
     
     model2 = End2EndShuffledMultitaskModel(dataset, vocab_size, embedding_dim, tokenizer, classification_model,
@@ -331,11 +331,11 @@ if __name__ == '__main__':
                                            D_e, D_h, n_classes, dropout, attention, context_attention, rec_dropout,
                                            residual, max(conv_lens))
     model2.init_pretrained_embeddings(embedding_matrix)
-    model2.cuda()
+    model2.cpu()
     optimizer2 = optim.Adam(model2.parameters(), lr=args.lr)
     
     if args.class_weight:
-        loss_function1  = MaskedNLLLoss(loss_weights.cuda())
+        loss_function1  = MaskedNLLLoss(loss_weights.cpu())
         loss_function2 = MaskedNLLLoss()
     else:
         loss_function1 = MaskedNLLLoss()

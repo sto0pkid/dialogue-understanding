@@ -4,6 +4,19 @@ This repository contains pytorch implementations of the models from the paper [U
 
 ![Alt text](images/uldu.png?raw=true "Utterance-level Dialogue Understanding")
 
+## Installation (for CPU only)
+### With Conda
+Install conda: https://docs.conda.io/projects/conda/en/latest/user-guide/install/rpm-debian.html
+
+
+```
+conda create --name commissives python=3.7
+conda activate commissives
+pip install -r requirements-cpu.txt
+pip install pytorch torchvision cpuonly -c pytorch
+```
+
+
 ## Task Definition
 
 Given the transcript of a conversation along with speaker information of each constituent utterance, the utterance-level dialogue understanding (utterance-level dialogue understanding) task aims to identify the label of each utterance from a set of  pre-defined labels that can be either a set of emotions, dialogue acts, intents etc. The figures above and below illustrate such conversations between two people, where each utterance is labeled by the underlying emotion and intent. Formally, given the input sequence of N number of utterances [(u<sub>1</sub>, p<sub>1</sub>), (u<sub>2</sub>,p<sub>2</sub>),...., (u<sub>N</sub>,p<sub>N</sub>)], where each utterance u<sub>i</sub>=[u<sub>i,1</sub>,u<sub>i,2</sub>,.....,u<sub>i,T</sub>] consists of T words u<sub>i,j</sub> and spoken by party p<sub>i</sub>, the task is to predict the label e<sub>i</sub> of each utterance u<sub>i</sub>. In this process, the classifier can also make use of the conversational context. There are also cases where not all the utterances in a dialogue have corresponding labels. 
@@ -59,6 +72,7 @@ The following datasets are included in this project:
 
 The original datasets are experimented using two distinct minibatch formation techniques. They can be found in these directories `glove-end-to-end/datasets/dialogue_level_minibatch`, `glove-end-to-end/datasets/utterance_level_minibatch`, and `roberta-end-to-end/datasets/dialogue_level_minibatch`. Please refer to the paper for more information.
 
+
 `glove-end-to-end/datasets/dialogue_level_minibatch` : This folder contains the dataset that can be used to prepare minibatches where **all** the utterances in the context having a valid label are classified.
 
 `glove-end-to-end/datasets/utterance_level_minibatch` : This folder contains the dataset that can be used to prepare minibatches where **only one** utterance in the context is classified and rest of the utterances are used as context.
@@ -97,6 +111,9 @@ Navigate to `glove-end-to-end`. We have also released scripts with which you can
 
 ### Execution
 Once navigate to `roberta-end-to-end` or `glove-end-to-end` directories to use RoBERTa or GloVe based feature extractors for the models, run the following commands to execute different models explained in the paper. Note that some of the models present in the `glove-end-to-end` folder are not available in the `roberta-end-to-end` folder. However, it should not be difficult to adapt these models to use RoBERTa embeddings.
+
+#### For evaluation
+Use option `--epochs 0`
 
 #### Main Model (Dialogue-Level Minibatch)
 To train and evaluate the without context classifier model and the bcLSTM/DialogueRNN model with full context and residual connections:

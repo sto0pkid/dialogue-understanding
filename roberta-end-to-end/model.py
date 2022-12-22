@@ -276,7 +276,7 @@ class DialogBertTransformer(nn.Module):
                 hidden_dim = 1024
         
         self.transformer_model_family = transformer_model_family
-        self.model = model.cuda()
+        self.model = model.cpu()
         self.hidden_dim = hidden_dim
         self.cls_model = cls_model
         self.D_h = D_h
@@ -287,33 +287,33 @@ class DialogBertTransformer(nn.Module):
         
         if self.cls_model == 'lstm':
             self.lstm = nn.LSTM(input_size=self.hidden_dim, hidden_size=D_h, 
-                                num_layers=2, bidirectional=True).cuda()
-            self.fc = nn.Linear(self.hidden_dim, 2*D_h).cuda()
+                                num_layers=2, bidirectional=True).cpu()
+            self.fc = nn.Linear(self.hidden_dim, 2*D_h).cpu()
             
             self.attention = attention
             if self.attention:
-                self.matchatt = MatchingAttention(2*D_h, 2*D_h, att_type='general2').cuda()
+                self.matchatt = MatchingAttention(2*D_h, 2*D_h, att_type='general2').cpu()
             
-            self.linear = nn.Linear(2*D_h, 2*D_h).cuda()
-            self.smax_fc = nn.Linear(2*D_h, num_classes).cuda()
+            self.linear = nn.Linear(2*D_h, 2*D_h).cpu()
+            self.smax_fc = nn.Linear(2*D_h, num_classes).cpu()
             
         elif self.cls_model == 'dialogrnn':
-            self.dialog_rnn_f = DialogueRNN(self.hidden_dim, D_h, D_h, D_h, context_attention).cuda()
-            self.dialog_rnn_r = DialogueRNN(self.hidden_dim, D_h, D_h, D_h, context_attention).cuda()
-            self.fc = nn.Linear(self.hidden_dim, 2*D_h).cuda()
+            self.dialog_rnn_f = DialogueRNN(self.hidden_dim, D_h, D_h, D_h, context_attention).cpu()
+            self.dialog_rnn_r = DialogueRNN(self.hidden_dim, D_h, D_h, D_h, context_attention).cpu()
+            self.fc = nn.Linear(self.hidden_dim, 2*D_h).cpu()
             
             self.attention = attention
             if self.attention:
                 self.matchatt = MatchingAttention(2*D_h, 2*D_h, att_type='general2').cuda()
             
-            self.linear = nn.Linear(2*D_h, 2*D_h).cuda()
+            self.linear = nn.Linear(2*D_h, 2*D_h).cpu()
             
-            self.smax_fc = nn.Linear(2*D_h, num_classes).cuda()
+            self.smax_fc = nn.Linear(2*D_h, num_classes).cpu()
             self.dropout_rec = nn.Dropout(0.1)
             
         elif self.cls_model == 'logreg':
-            self.linear = nn.Linear(self.hidden_dim, D_h).cuda()
-            self.smax_fc = nn.Linear(D_h, num_classes).cuda()
+            self.linear = nn.Linear(self.hidden_dim, D_h).cpu()
+            self.smax_fc = nn.Linear(D_h, num_classes).cpu()
         
     def pad(
         self, 
@@ -321,7 +321,7 @@ class DialogBertTransformer(nn.Module):
         length
     ):
         if length > tensor.size(0):
-            return torch.cat([tensor, torch.zeros(length - tensor.size(0), *tensor.size()[1:]).cuda()])
+            return torch.cat([tensor, torch.zeros(length - tensor.size(0), *tensor.size()[1:]).cpu()])
         else:
             return tensor
     
@@ -361,8 +361,8 @@ class DialogBertTransformer(nn.Module):
         
         elif self.transformer_model_family in ['bert', 'roberta']:
             batch = self.tokenizer(utterances, padding=True, return_tensors="pt")
-            input_ids = batch['input_ids'].cuda()
-            attention_mask = batch['attention_mask'].cuda()
+            input_ids = batch['input_ids'].cpu()
+            attention_mask = batch['attention_mask'].cpu()
             _, features = self.model(input_ids, attention_mask, output_hidden_states=True)
             if self.transformer_model_family == 'roberta':
                 features = features[:, 0, :]
@@ -371,7 +371,7 @@ class DialogBertTransformer(nn.Module):
         features = torch.stack([self.pad(features.narrow(0, s, l), max(lengths))
                                 for s, l in zip(start.data.tolist(), lengths.data.tolist())], 0).transpose(0, 1)
         
-        umask = umask.cuda()
+        umask = umask.cpu()
         mask = umask.unsqueeze(-1).type(FloatTensor) # (batch, num_utt) -> (batch, num_utt, 1)
         mask = mask.transpose(0, 1) # (batch, num_utt, 1) -> (num_utt, batch, 1)
         mask = mask.repeat(1, 1, 2*self.D_h) #  (num_utt, batch, 1) -> (num_utt, batch, output_size)

@@ -20,7 +20,7 @@ def pad(tensor, length):
             var = tensor
             if length > var.size(0):
                 if torch.cuda.is_available():
-                    return torch.cat([var, torch.zeros(length - var.size(0), *var.size()[1:]).cuda()])
+                    return torch.cat([var, torch.zeros(length - var.size(0), *var.size()[1:]).cpu()])
                 else:
                     return torch.cat([var, torch.zeros(length - var.size(0), *var.size()[1:])])
             else:
@@ -28,7 +28,7 @@ def pad(tensor, length):
         else:
             if length > tensor.size(0):
                 if torch.cuda.is_available():
-                    return torch.cat([tensor, torch.zeros(length - tensor.size(0), *tensor.size()[1:]).cuda()])
+                    return torch.cat([tensor, torch.zeros(length - tensor.size(0), *tensor.size()[1:]).cpu()])
                 else:
                     return torch.cat([tensor, torch.zeros(length - tensor.size(0), *tensor.size()[1:])])
             else:
@@ -455,8 +455,8 @@ class End2EndModelSpeaker(nn.Module):
         sequence = torch.stack([self.pad(sequence.narrow(0, s, l), max(lengths))
                                 for s, l in zip(start.data.tolist(), lengths.data.tolist())], 0).transpose(0, 1)
         
-        sequence = sequence.cuda()
-        umask = umask.cuda()
+        sequence = sequence.cpu()
+        umask = umask.cpu()
         
         mask = umask.unsqueeze(-1).type(FloatTensor) # (batch, num_utt) -> (batch, num_utt, 1)
         mask = mask.transpose(0, 1) # (batch, num_utt, 1) -> (num_utt, batch, 1)
@@ -639,8 +639,8 @@ class End2EndModel(nn.Module):
         sequence = torch.stack([self.pad(sequence.narrow(0, s, l), max(lengths))
                                 for s, l in zip(start.data.tolist(), lengths.data.tolist())], 0).transpose(0, 1)
         
-        sequence = sequence.cuda()
-        umask = umask.cuda()
+        sequence = sequence.cpu()
+        umask = umask.cpu()
         
         mask = umask.unsqueeze(-1).type(FloatTensor) # (batch, num_utt) -> (batch, num_utt, 1)
         mask = mask.transpose(0, 1) # (batch, num_utt, 1) -> (num_utt, batch, 1)
@@ -822,8 +822,8 @@ class End2EndShuffledMultitaskModel(nn.Module):
         sequence = torch.stack([self.pad(sequence.narrow(0, s, l), max(lengths))
                                 for s, l in zip(start.data.tolist(), lengths.data.tolist())], 0).transpose(0, 1)
         
-        sequence = sequence.cuda()
-        umask = umask.cuda()
+        sequence = sequence.cpu()
+        umask = umask.cpu()
         
         mask = umask.unsqueeze(-1).type(FloatTensor) # (batch, num_utt) -> (batch, num_utt, 1)
         mask = mask.transpose(0, 1) # (batch, num_utt, 1) -> (num_utt, batch, 1)

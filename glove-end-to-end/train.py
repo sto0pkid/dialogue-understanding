@@ -68,20 +68,20 @@ def train_or_eval_model(model, loss_function, dataloader, epoch, optimizer=None,
             
         # create umask and qmask 
         lengths = [len(item) for item in conversations]
-        umask = torch.zeros(len(lengths), max(lengths)).long().cuda()
+        umask = torch.zeros(len(lengths), max(lengths)).long().cpu()
         for j in range(len(lengths)):
             umask[j][:lengths[j]] = 1
             
         qmask = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in speaker_mask], 
-                                                batch_first=False).long().cuda()
+                                                batch_first=False).long().cpu()
         qmask = torch.nn.functional.one_hot(qmask)
         
         # create labels and mask
         label = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in label], 
-                                                batch_first=True).cuda()
+                                                batch_first=True).cpu()
         
         loss_mask = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in loss_mask], 
-                                                    batch_first=True).cuda()
+                                                    batch_first=True).cpu()
         
         # obtain log probabilities
         log_prob = model(conversations, lengths, umask, qmask)
@@ -255,10 +255,10 @@ if __name__ == '__main__':
                          D_e, D_h, n_classes, dropout, attention, context_attention, rec_dropout, residual)
     
     model.init_pretrained_embeddings(embedding_matrix)
-    model.cuda()
+    model.cpu()
     
     if args.class_weight:
-        loss_function  = MaskedNLLLoss(loss_weights.cuda())
+        loss_function  = MaskedNLLLoss(loss_weights.cpu())
     else:
         loss_function = MaskedNLLLoss()
         
@@ -272,6 +272,40 @@ if __name__ == '__main__':
     test_fscores = []
     best_loss, best_label, best_pred, best_mask = None, None, None, None
 
+    if(n_epochs == 0):
+        #newmodel = nn.LSTM(input_size=cnn_output_size, hidden_size=D_e, num_layers=2, 
+        #                    bidirectional=True, dropout=0.1)
+        model.load_state_dict(torch.load('./tmp/model.dict'), strict=False)
+        model.eval()
+        test_loss, test_acc, test_fscore, test_label, test_pred, test_mask  = train_or_eval_model(model, loss_function, test_loader, 0)
+        print('Finished evaluation.')
+        valid_loss, valid_acc, valid_fscore, _, _, _ = train_or_eval_model(model, loss_function, 
+                                                                                   valid_loader, 0)
+        valid_losses.append(valid_loss)
+        valid_fscores.append(valid_fscore)
+        test_fscores.append(test_fscore)
+
+        valid_fscores = np.array(valid_fscores).transpose()
+        test_fscores = np.array(test_fscores).transpose()
+
+        score1 = test_fscores[0][np.argmin(valid_losses)]
+        score2 = test_fscores[0][np.argmax(valid_fscores[0])]
+        score3 = test_fscores[1][np.argmin(valid_losses)]
+        score4 = test_fscores[1][np.argmax(valid_fscores[1])]
+        score5 = test_fscores[2][np.argmin(valid_losses)]
+        score6 = test_fscores[2][np.argmax(valid_fscores[2])]
+        
+        scores = [score1, score2, score3, score4, score5, score6]
+        scores_val_loss = [score1, score3, score5]
+        scores_val_f1 = [score2, score4, score6]
+        
+        print ('Scores: Weighted, Micro, Macro')
+        print('F1@Best Valid Loss: {}'.format(scores_val_loss))
+        print('F1@Best Valid F1: {}'.format(scores_val_f1))
+        print(test_label)
+        print(test_pred)
+        
+        quit()
     for e in range(n_epochs):
         start_time = time.time()
         train_loss, train_acc, train_fscore, _, _, _ = train_or_eval_model(model, loss_function,
@@ -354,3 +388,4 @@ if __name__ == '__main__':
     lf.write('-'*50 + '\n\n')
     rf.close()
     lf.close()
+    torch.save(model.state_dict(), './tmp/model.dict')

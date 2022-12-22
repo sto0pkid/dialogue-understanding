@@ -83,20 +83,20 @@ def train_or_eval_model(model, loss_function, dataloader, epoch, cc=None, optimi
         # create labels and mask
         if cc:
             loss_mask_ = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in loss_mask],
-                                                        batch_first=True).cuda()
+                                                        batch_first=True).cpu()
             target_idx = loss_mask_.argmax(dim=1)
             conversations = update_context(conversations, target_idx, cc)
             label         = update_context(label, target_idx, cc)
             loss_mask     = update_context(loss_mask, target_idx, cc)
 
         label = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in label],
-                                                batch_first=True).cuda()
+                                                batch_first=True).cpu()
         loss_mask = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in loss_mask],
-                                                    batch_first=True).cuda()
+                                                    batch_first=True).cpu()
 
         # create umask and qmask
         lengths = [len(item) for item in conversations]
-        umask = torch.zeros(len(lengths), max(lengths)).long().cuda()
+        umask = torch.zeros(len(lengths), max(lengths)).long().cpu()
         for j in range(len(lengths)):
             umask[j][:lengths[j]] = 1
 
@@ -330,10 +330,10 @@ if __name__ == '__main__':
         n_epochs = 1
 
     model.init_pretrained_embeddings(embedding_matrix)
-    model.cuda()
+    model.cpu()
 
     if args.class_weight:
-        loss_function  = MaskedNLLLoss(loss_weights.cuda())
+        loss_function  = MaskedNLLLoss(loss_weights.cpu())
     else:
         loss_function = MaskedNLLLoss()
 
